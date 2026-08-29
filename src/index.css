@@ -1,0 +1,229 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Platform Design System - عبد العزيز الحسناوي */
+    --ink: 230 30% 8%;
+    --ink-light: 230 25% 12%;
+    --indigo: 240 35% 18%;
+    --amber: 25 75% 50%;
+    --amber-light: 30 80% 60%;
+    --silver: 40 15% 60%;
+    --ivory: 40 30% 93%;
+    --ivory-muted: 40 20% 75%;
+
+    /* shadcn compatibility */
+    --background: 230 30% 8%;
+    --foreground: 40 30% 93%;
+
+    --card: 240 35% 11%;
+    --card-foreground: 40 30% 93%;
+
+    --popover: 240 35% 11%;
+    --popover-foreground: 40 30% 93%;
+
+    --primary: 25 75% 50%;
+    --primary-foreground: 230 30% 8%;
+
+    --secondary: 240 35% 18%;
+    --secondary-foreground: 40 30% 93%;
+
+    --muted: 230 20% 18%;
+    --muted-foreground: 40 15% 60%;
+
+    --accent: 25 75% 50%;
+    --accent-foreground: 230 30% 8%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 40 30% 93%;
+
+    --border: 240 20% 22%;
+    --input: 240 25% 20%;
+    --ring: 25 75% 50%;
+
+    --radius: 0.75rem;
+  }
+
+  .light-mode {
+    --background: 40 30% 96%;
+    --foreground: 230 30% 12%;
+    --card: 40 20% 92%;
+    --card-foreground: 230 30% 12%;
+    --popover: 40 20% 94%;
+    --popover-foreground: 230 30% 12%;
+    --primary: 25 75% 45%;
+    --primary-foreground: 40 30% 96%;
+    --secondary: 40 20% 88%;
+    --secondary-foreground: 230 30% 12%;
+    --muted: 40 15% 88%;
+    --muted-foreground: 230 15% 40%;
+    --accent: 25 75% 45%;
+    --accent-foreground: 40 30% 96%;
+    --border: 40 15% 80%;
+    --input: 40 15% 82%;
+    --ring: 25 75% 45%;
+    --ink: 40 30% 96%;
+    --ink-light: 40 25% 92%;
+    --indigo: 40 20% 88%;
+    --ivory: 230 30% 12%;
+    --ivory-muted: 230 20% 35%;
+    --silver: 230 15% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    direction: rtl;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Aref Ruqaa', serif;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--ink));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--amber));
+    border-radius: 3px;
+  }
+}
+
+@layer utilities {
+  .font-heading {
+    font-family: 'Aref Ruqaa', serif;
+  }
+
+  .font-body {
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+  }
+
+  .text-amber {
+    color: hsl(var(--amber));
+  }
+
+  .text-silver {
+    color: hsl(var(--silver));
+  }
+
+  .text-ivory {
+    color: hsl(var(--ivory));
+  }
+
+  .text-ivory-muted {
+    color: hsl(var(--ivory-muted));
+  }
+
+  .bg-ink {
+    background-color: hsl(var(--ink));
+  }
+
+  .bg-ink-light {
+    background-color: hsl(var(--ink-light));
+  }
+
+  .bg-indigo {
+    background-color: hsl(var(--indigo));
+  }
+
+  .bg-amber {
+    background-color: hsl(var(--amber));
+  }
+
+  .border-amber {
+    border-color: hsl(var(--amber));
+  }
+
+  .border-silver {
+    border-color: hsl(var(--silver));
+  }
+
+  .tuareg-border {
+    border: 1px solid hsl(var(--amber) / 0.3);
+  }
+
+  .glass-card {
+    background: hsl(var(--indigo) / 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--amber) / 0.2);
+  }
+
+  .amber-gradient {
+    background: linear-gradient(135deg, hsl(var(--amber)), hsl(var(--amber-light)));
+  }
+
+  .ink-gradient {
+    background: linear-gradient(180deg, hsl(var(--ink)) 0%, hsl(var(--indigo)) 100%);
+  }
+
+  .masonry-grid {
+    column-count: 2;
+    column-gap: 12px;
+  }
+
+  @media (min-width: 768px) {
+    .masonry-grid {
+      column-count: 3;
+      column-gap: 16px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .masonry-grid {
+      column-count: 4;
+      column-gap: 16px;
+    }
+  }
+
+  .masonry-item {
+    break-inside: avoid;
+    margin-bottom: 12px;
+  }
+
+  @media (min-width: 768px) {
+    .masonry-item {
+      margin-bottom: 16px;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
