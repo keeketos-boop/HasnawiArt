@@ -1,20 +1,32 @@
-import { useState } from 'react';
-import { getSiteSettings, saveSiteSettings, getStoredArtworks } from '@/lib/storage';
-import { ARTWORKS } from '@/constants/data';
-import { Check, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { fetchSiteSettings, saveSiteSettings, fetchArtworks } from '@/lib/api';
+import type { SiteSettings } from '@/types';
+import { Check, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Artwork } from '@/types';
+import { DEFAULT_SETTINGS } from '@/lib/defaults';
 
 export default function AdminHomepagePage() {
-  const [settings, setSettings] = useState(getSiteSettings());
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
+  const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  // Merge artworks
-  const storedArtworks = getStoredArtworks();
-  const storedIds = new Set(storedArtworks.map(a => a.id));
-  const allArtworks = [...storedArtworks, ...ARTWORKS.filter(a => !storedIds.has(a.id))];
+  useEffect(() => {
+    Promise.all([fetchSiteSettings(), fetchArtworks()]).then(([s, aw]) => {
+      setSettings(s);
+      setArtworks(aw.filter(a => !a.isArchived));
+      setLoading(false);
+    });
+  }, []);
 
-  const handleSave = () => {
-    saveSiteSettings(settings);
-    toast.success('تم حفظ الإعدادات');
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await saveSiteSettings(settings);
+      toast.success('تم الحفظ ✓ — التغييرات مرئية الآن للجميع');
+    } catch { toast.error('حدث خطأ أثناء الحفظ'); }
+    finally { setSaving(false); }
   };
 
   const toggleFeatured = (id: string) => {
@@ -24,29 +36,31 @@ export default function AdminHomepagePage() {
     setSettings(s => ({ ...s, featuredWorkIds: ids }));
   };
 
-  const toggleSection = (key: keyof typeof settings) => {
-    setSettings(s => ({ ...s, [key]: !s[key] }));
+  const toggleSection = (key: keyof SiteSettings) => {
+    setSettings(s => ({ ...s, [key]: !s[key as keyof typeof s] }));
   };
 
-  const sections = [
-    { key: 'showHero' as const, label: 'قسم Hero الترحيبي' },
-    { key: 'showStats' as const, label: 'شريط الإحصائيات' },
-    { key: 'showTypesCards' as const, label: 'بطاقتا الأنواع' },
-    { key: 'showFeatured' as const, label: 'الأعمال المميزة' },
-    { key: 'showCategories' as const, label: 'أيقونات التصنيفات' },
-    { key: 'showAbout' as const, label: 'قسم نبذة عني' },
-    { key: 'showReviews' as const, label: 'قسم التقييمات' },
+  const sections: { key: keyof SiteSettings; label: string }[] = [
+    { key: 'showHero', label: 'قسم Hero الترحيبي' },
+    { key: 'showStats', label: 'شريط الإحصائيات' },
+    { key: 'showTypesCards', label: 'بطاقتا الأنواع' },
+    { key: 'showFeatured', label: 'الأعمال المميزة' },
+    { key: 'showCategories', label: 'أيقونات التصنيفات' },
+    { key: 'showAbout', label: 'قسم نبذة عني' },
+    { key: 'showReviews', label: 'قسم التقييمات' },
   ];
+
+  if (loading) return <div className="flex items-center justify-center py-24"><Loader2 size={28} className="animate-spin text-amber-500" /></div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-100">محتوى الصفحة الرئيسية</h1>
-          <p className="text-sm text-gray-400">تحكم في محتوى وأقسام الصفحة الرئيسية</p>
+          <p className="text-sm text-gray-400">التغييرات تُحفظ في Supabase وتظهر للجميع فوراً</p>
         </div>
-        <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-gray-900 text-sm font-medium">
-          <Check size={16} /> حفظ التغييرات
+        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-gray-900 text-sm font-medium disabled:opacity-60">
+          {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />} حفظ التغييرات
         </button>
       </div>
 
@@ -57,10 +71,7 @@ export default function AdminHomepagePage() {
           {sections.map(({ key, label }) => (
             <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-gray-900/50">
               <span className="text-sm text-gray-300">{label}</span>
-              <button
-                onClick={() => toggleSection(key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all ${settings[key] ? 'bg-green-900/40 text-green-400' : 'bg-gray-700 text-gray-500'}`}
-              >
+              <button onClick={() => toggleSection(key)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all ${settings[key] ? 'bg-green-900/40 text-green-400' : 'bg-gray-700 text-gray-500'}`}>
                 {settings[key] ? <><Eye size={12} /> مرئي</> : <><EyeOff size={12} /> مخفي</>}
               </button>
             </div>
@@ -95,31 +106,29 @@ export default function AdminHomepagePage() {
       <div className="bg-gray-800 rounded-xl border border-gray-700/50 p-5 space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-gray-200">الأعمال المميزة في الرئيسية</h2>
-          <p className="text-xs text-gray-400 mt-1">اختر حتى 4 أعمال تظهر في قسم الأعمال المميزة — {settings.featuredWorkIds.length}/4 محدد</p>
+          <p className="text-xs text-gray-400 mt-1">اختر حتى 4 أعمال — {settings.featuredWorkIds.length}/4 محدد</p>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
-          {allArtworks.filter(a => !a.isArchived).map(work => (
-            <button
-              key={work.id}
-              onClick={() => toggleFeatured(work.id)}
-              className={`relative rounded-xl overflow-hidden border-2 transition-all ${settings.featuredWorkIds.includes(work.id) ? 'border-amber-500' : 'border-gray-700 hover:border-gray-500'}`}
-            >
-              <img src={work.images[0]} alt={work.title} className="w-full h-24 object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent" />
-              <p className="absolute bottom-1.5 right-2 left-2 text-xs text-white font-medium truncate">{work.title}</p>
-              {settings.featuredWorkIds.includes(work.id) && (
-                <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
-                  <Check size={10} className="text-gray-900" />
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
+        {artworks.length === 0 ? (
+          <p className="text-gray-500 text-sm text-center py-8">لا توجد أعمال منشورة بعد. أضف أعمالاً من قسم "الأعمال الجاهزة" أولاً.</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
+            {artworks.map(work => (
+              <button key={work.id} onClick={() => toggleFeatured(work.id)} className={`relative rounded-xl overflow-hidden border-2 transition-all ${settings.featuredWorkIds.includes(work.id) ? 'border-amber-500' : 'border-gray-700 hover:border-gray-500'}`}>
+                <img src={work.images[0]} alt={work.title} className="w-full h-24 object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent" />
+                <p className="absolute bottom-1.5 right-2 left-2 text-xs text-white font-medium truncate">{work.title}</p>
+                {settings.featuredWorkIds.includes(work.id) && (
+                  <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center"><Check size={10} className="text-gray-900" /></div>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end">
-        <button onClick={handleSave} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-gray-900 font-semibold text-sm">
-          <Check size={16} /> حفظ جميع التغييرات
+        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-gray-900 font-semibold text-sm disabled:opacity-60">
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} حفظ جميع التغييرات
         </button>
       </div>
     </div>
