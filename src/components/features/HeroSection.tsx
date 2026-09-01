@@ -1,100 +1,92 @@
+import { useState, useEffect } from 'react';
+import { fetchSiteSettings } from '@/lib/api';
+import type { SiteSettings } from '@/types';
+import { DEFAULT_SETTINGS } from '@/lib/defaults';
+import { ArrowDown, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ChevronDown } from 'lucide-react';
-import { getSiteSettings } from '@/lib/storage';
+import heroBg from '@/assets/hero-bg.jpg';
+import tuaregSeal from '@/assets/tuareg-seal.png';
 
-export default function HeroSection() {
-  const s = getSiteSettings();
+interface HeroSectionProps {
+  settings?: SiteSettings;
+}
 
-  const scrollDown = () => {
-    document.getElementById('gallery-preview')?.scrollIntoView({ behavior: 'smooth' });
-  };
+export default function HeroSection({ settings: propSettings }: HeroSectionProps) {
+  const [settings, setSettings] = useState<SiteSettings>(propSettings || DEFAULT_SETTINGS);
+
+  useEffect(() => {
+    if (!propSettings) {
+      fetchSiteSettings().then(setSettings);
+    }
+  }, [propSettings]);
+
+  useEffect(() => {
+    if (propSettings) setSettings(propSettings);
+  }, [propSettings]);
+
+  const bgImage = settings.heroBackground || heroBg;
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0">
-        {s.heroBackground ? (
-          <img src={s.heroBackground} alt="خلفية" className="w-full h-full object-cover opacity-40" />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(240,35%,10%)] via-[hsl(230,30%,8%)] to-[hsl(25,40%,12%)]" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/40 to-ink" />
+    <section
+      id="home"
+      className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden"
+      style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+    >
+      {/* Overlays */}
+      <div className="absolute inset-0 bg-ink/75" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+
+      {/* Decorative Seal */}
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 opacity-10 pointer-events-none">
+        <img src={tuaregSeal} alt="" className="w-48 h-48" />
       </div>
 
-      {/* Geometric decorations */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 border border-amber/10 rounded-full" />
-        <div className="absolute top-32 left-20 w-52 h-52 border border-amber/15 rounded-full" />
-        <div className="absolute bottom-40 right-10 w-96 h-96 border border-amber/8 rounded-full" />
-        <div className="absolute top-10 right-1/4 w-32 h-32 border border-amber/12 rotate-45" />
-        <div className="absolute bottom-20 left-1/3 w-24 h-24 border border-amber/10 rotate-12" />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] opacity-5 rounded-full"
-          style={{ background: 'radial-gradient(circle, hsl(25, 75%, 50%), transparent 70%)' }}
-        />
-      </div>
+      <div className="relative z-10 text-center px-4 sm:px-6 max-w-3xl mx-auto">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber/30 bg-amber/5 mb-6">
+          <Star size={12} className="text-amber fill-amber" />
+          <span className="font-body text-amber text-xs">{settings.heroSubtitle}</span>
+        </div>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-20">
-        <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber/30 bg-amber/5 text-amber text-xs font-body mb-6 animate-fade-in">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse" />
-            متاح للطلبات الجديدة
-          </div>
+        {/* Title */}
+        <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl text-ivory mb-4 leading-tight">
+          {settings.heroTitle}
+        </h1>
 
-          <h1 className="font-heading text-5xl sm:text-6xl lg:text-8xl text-ivory leading-tight mb-4 animate-slide-up">
-            {s.heroTitle.split(' ')[0]}
-            <br />
-            <span className="text-amber">{s.heroTitle.split(' ').slice(1).join(' ')}</span>
-          </h1>
+        {/* Divider */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="w-12 h-px bg-amber/50" />
+          <img src={tuaregSeal} alt="" className="w-6 h-6 opacity-70" />
+          <div className="w-12 h-px bg-amber/50" />
+        </div>
 
-          <p className="font-heading text-xl sm:text-2xl text-ivory-muted mb-3">{s.heroSubtitle}</p>
+        {/* Bio */}
+        <p className="font-body text-ivory-muted text-lg leading-relaxed mb-10 max-w-xl mx-auto">
+          {settings.heroBio}
+        </p>
 
-          <p className="font-body text-ivory-muted leading-relaxed text-base sm:text-lg mb-8 max-w-lg">
-            {s.heroBio}
-          </p>
-
-          <div className="flex flex-wrap gap-4">
-            <Link
-              to="/gallery"
-              className="flex items-center gap-2 px-6 py-3.5 rounded-xl amber-gradient text-ink font-medium font-body hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-amber/20"
-            >
-              {s.heroCta1}
-              <ArrowLeft size={18} />
-            </Link>
-            <Link
-              to="/order"
-              className="flex items-center gap-2 px-6 py-3.5 rounded-xl border border-amber/30 text-ivory font-body hover:border-amber/60 hover:bg-amber/5 transition-all"
-            >
-              {s.heroCta2}
-            </Link>
-          </div>
-
-          {/* Stats */}
-          {s.showStats && (
-            <div className="flex flex-wrap gap-8 mt-12 pt-8 border-t border-border/40">
-              {[
-                { num: s.statsWorks, label: 'عمل فني' },
-                { num: s.statsYears, label: 'سنوات خبرة' },
-                { num: s.statsClients, label: 'عميل راضٍ' },
-              ].map(stat => (
-                <div key={stat.label}>
-                  <div className="font-heading text-3xl text-amber">{stat.num}</div>
-                  <div className="font-body text-ivory-muted text-sm">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* CTAs */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link
+            to="/gallery"
+            className="px-8 py-4 rounded-2xl amber-gradient text-ink font-body font-semibold text-base hover:opacity-90 transition-all shadow-lg shadow-amber/25"
+          >
+            {settings.heroCta1}
+          </Link>
+          <Link
+            to="/order"
+            className="px-8 py-4 rounded-2xl border border-ivory/30 text-ivory font-body font-medium text-base hover:border-amber/50 hover:text-amber transition-all"
+          >
+            {settings.heroCta2}
+          </Link>
         </div>
       </div>
 
-      <button
-        onClick={scrollDown}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-ivory-muted hover:text-amber transition-colors"
-      >
-        <span className="text-xs font-body">استعرض</span>
-        <ChevronDown size={20} className="animate-bounce" />
-      </button>
+      {/* Scroll indicator */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-ivory-muted animate-bounce">
+        <span className="font-body text-xs">اكتشف</span>
+        <ArrowDown size={16} />
+      </div>
     </section>
   );
 }
