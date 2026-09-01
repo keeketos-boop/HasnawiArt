@@ -29,8 +29,6 @@ export interface Service {
   coverImage: string;
   requiresDeposit: boolean;
   isArchived?: boolean;
-  images?: string[];
-  depositNote?: string;
 }
 
 export type OrderType = 'ready' | 'service';

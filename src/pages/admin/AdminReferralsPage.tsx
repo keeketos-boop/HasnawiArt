@@ -1,20 +1,12 @@
-import { useState, useEffect } from 'react';
-import { fetchOrders } from '@/lib/api';
-import type { Order } from '@/types';
+import { useState } from 'react';
+import { getOrders } from '@/lib/storage';
 import { BarChart2, Users, Link2, Award } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
 
 export default function AdminReferralsPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const orders = getOrders();
 
-  useEffect(() => {
-    fetchOrders().then(data => { setOrders(data); setLoading(false); });
-  }, []);
-
-  if (loading) return <div className="flex items-center justify-center py-24"><Loader2 size={28} className="animate-spin text-amber-500" /></div>;
-
-  const refMap = new Map<string, { code: string; count: number; totalValue: number }>();
+  // Build referral stats
+  const refMap = new Map<string, { code: string; count: number; totalValue: number; customers: string[] }>();
   orders.forEach(o => {
     if (!o.referralCode) return;
     const code = o.referralCode;
@@ -22,19 +14,23 @@ export default function AdminReferralsPage() {
       const r = refMap.get(code)!;
       r.count++;
       r.totalValue += o.totalAmount || 0;
+      if (!r.customers.includes(o.customerName)) r.customers.push(o.customerName);
     } else {
-      refMap.set(code, { code, count: 1, totalValue: o.totalAmount || 0 });
+      refMap.set(code, { code, count: 1, totalValue: o.totalAmount || 0, customers: [o.customerName] });
     }
   });
+
   const referrals = Array.from(refMap.values()).sort((a, b) => b.count - a.count);
-  const totalPoints = referrals.reduce((s, r) => s + r.count * 100 + Math.floor(r.totalValue / 10), 0);
+  const totalPoints = referrals.reduce((sum, r) => sum + r.count * 100 + Math.floor(r.totalValue / 10), 0);
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="text-xl font-semibold text-gray-100">الإحالات والنقاط</h1>
-        <p className="text-sm text-gray-400">نظام الإحالات — المرحلة الثانية</p>
+        <p className="text-sm text-gray-400">نظام الإحالات قيد التطوير — سيتم إطلاقه في المرحلة الثانية</p>
       </div>
+
+      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: 'روابط إحالة', value: referrals.length, Icon: Link2, color: 'text-blue-400', bg: 'bg-blue-900/30' },
@@ -49,10 +45,12 @@ export default function AdminReferralsPage() {
           </div>
         ))}
       </div>
+
       {referrals.length === 0 ? (
         <div className="bg-gray-800 rounded-xl border border-gray-700/50 p-12 text-center">
           <Link2 size={32} className="text-gray-600 mx-auto mb-3" />
           <p className="text-gray-500 text-sm">لا توجد إحالات بعد</p>
+          <p className="text-gray-600 text-xs mt-1">ستظهر بيانات الإحالات هنا عند استخدام الأكواد</p>
         </div>
       ) : (
         <div className="bg-gray-800 rounded-xl border border-gray-700/50 overflow-hidden">
@@ -62,28 +60,34 @@ export default function AdminReferralsPage() {
                 <th className="px-4 py-3 text-xs font-medium text-gray-400">كود الإحالة</th>
                 <th className="px-4 py-3 text-xs font-medium text-gray-400">عدد الطلبات</th>
                 <th className="px-4 py-3 text-xs font-medium text-gray-400">قيمة الطلبات</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-400">النقاط</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-400">النقاط المكتسبة</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700/50">
-              {referrals.map(r => (
-                <tr key={r.code} className="hover:bg-gray-700/30 transition-colors">
-                  <td className="px-4 py-3"><span className="text-sm text-amber-400 font-mono">{r.code}</span></td>
-                  <td className="px-4 py-3"><span className="text-sm text-gray-300">{r.count}</span></td>
-                  <td className="px-4 py-3"><span className="text-sm text-green-400">{r.totalValue.toLocaleString()} د.ل</span></td>
-                  <td className="px-4 py-3"><span className="text-sm text-purple-400">{r.count * 100 + Math.floor(r.totalValue / 10)} نقطة</span></td>
-                </tr>
-              ))}
+              {referrals.map(r => {
+                const points = r.count * 100 + Math.floor(r.totalValue / 10);
+                return (
+                  <tr key={r.code} className="hover:bg-gray-700/30 transition-colors">
+                    <td className="px-4 py-3"><span className="text-sm text-amber-400 font-mono">{r.code}</span></td>
+                    <td className="px-4 py-3"><span className="text-sm text-gray-300">{r.count}</span></td>
+                    <td className="px-4 py-3"><span className="text-sm text-green-400">{r.totalValue.toLocaleString()} د.ل</span></td>
+                    <td className="px-4 py-3"><span className="text-sm text-purple-400">{points} نقطة</span></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
+
       <div className="bg-gray-800 rounded-xl border border-amber-600/20 p-5">
         <p className="text-amber-400 text-sm font-medium mb-2">قادم قريباً — المرحلة الثانية</p>
         <ul className="space-y-1 text-xs text-gray-400">
           <li>• إنشاء روابط إحالة مخصصة لكل عميل</li>
-          <li>• 100 نقطة لكل عميل جديد + 1 نقطة لكل 10 دنانير</li>
-          <li>• صفحة محيل تفصيلية وتحويل نقاط لخصومات</li>
+          <li>• 100 نقطة ثابتة لكل عميل جديد + 1 نقطة لكل 10 دنانير</li>
+          <li>• نظام متعاونين بنسبة مالية</li>
+          <li>• صفحة مُحيل تفصيلية</li>
+          <li>• تحويل النقاط إلى خصومات</li>
         </ul>
       </div>
     </div>
